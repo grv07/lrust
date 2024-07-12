@@ -79,6 +79,7 @@ fn test<'a>() -> &'a GameState {
     /* Returning structs from functions moves them, and moves may change their address,
       which invalidates all references to that struct.
       Rust chose to promise moves are simple memcpy without any extra code running
+      https://users.rust-lang.org/t/is-it-possible-to-return-a-struct-containing-reference-to-local-variable-and-the-variable-it-self-by-moving/107566
     */
     return &GameState { time: 23 };
 }
