@@ -65,7 +65,7 @@ const _: () = {
     struct ImplState<T: State>(T);
 
     // pass case
-    let _ = ImplState(GameState {});
+    let _ = ImplState(GameState { time: 33 });
 
     // fail case
     // struct GameStateNew {}
@@ -111,7 +111,7 @@ fn main() {
     println!("");
 
     // override default trait const
-    let gs = GameState {};
+    let gs = GameState { time: 69 };
 
     println!("{:?}", gs);
     println!("low age limit: {:?}", GameState::LOW_AGE_LIMIT);
