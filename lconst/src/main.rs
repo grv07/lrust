@@ -46,7 +46,9 @@ trait State {
 
 // ------- override default in struct
 #[derive(Debug)]
-struct GameState {}
+struct GameState {
+    time: i32,
+}
 
 impl State for GameState {
     const LOW_AGE_LIMIT: i32 = 11;
@@ -69,6 +71,17 @@ const _: () = {
     // struct GameStateNew {}
     // let _ = ImplState(GameStateNew {});
 };
+
+fn test<'a>() -> &'a GameState {
+    //&'a Vec<i32> {
+    // return &vec![32];
+
+    /* Returning structs from functions moves them, and moves may change their address,
+      which invalidates all references to that struct.
+      Rust chose to promise moves are simple memcpy without any extra code running
+    */
+    return &GameState { time: 23 };
+}
 
 fn main() {
     println!("{}\n{:?}\n{:?}", GAME_NUMBER, GAME_PLAYERS, GAME_SCORE);
