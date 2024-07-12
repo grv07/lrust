@@ -52,6 +52,24 @@ impl State for GameState {
     const LOW_AGE_LIMIT: i32 = 11;
 }
 
+// ------------- Unnamed const
+
+// annonimus const
+const _: () = { () };
+//             ----> this code stil runs at compile time;
+
+// example use: lets check if GameState impl State at compile time
+const _: () = {
+    struct ImplState<T: State>(T);
+
+    // pass case
+    let _ = ImplState(GameState {});
+
+    // fail case
+    // struct GameStateNew {}
+    // let _ = ImplState(GameStateNew {});
+};
+
 fn main() {
     println!("{}\n{:?}\n{:?}", GAME_NUMBER, GAME_PLAYERS, GAME_SCORE);
     println!("Active Playe: {}", get_active_player());
