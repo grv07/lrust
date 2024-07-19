@@ -1,5 +1,6 @@
 // Defination
-// Closures are fun that can capture the enclose env.
+
+// Closures are functions that can capture the enclose env.
 
 // example
 fn outer_var() {
@@ -68,7 +69,7 @@ fn capturing_type() {
     // -----------  CASE 3: Take pass by value
 
     // TODO: If you use LSP you can see the type of x is a x: impl FnOnce(u32)
-    let x = |i: u32| {
+    let x = |_i: u32| {
         println!("List of ids {:?}", list);
         drop(list);
         // list.push(69);
@@ -142,8 +143,71 @@ fn as_input_parameters() {
     // });
 }
 
+fn closures_as_func_input_param() {
+    fn call_me<F>(f: F)
+    where
+        F: Fn(),
+    {
+        f();
+    }
+
+    fn test() {
+        println!("test this as Fn",);
+    }
+
+    call_me(test);
+}
+
+fn closure_as_func_output_param() {
+    fn create_fn(list: &Vec<u8>) -> impl Fn() + '_ {
+        // move of list is required since list is not live long enough
+        let f = move || {
+            println!("print {:?}", list);
+        };
+        // TODO: Uncomment this will fails since list is already moved
+
+        println!("{}", list.len());
+
+        f
+    }
+
+    fn create_fn_mut(list: &mut Vec<u8>) -> impl FnMut() + '_ {
+        // move of list is required since list is not live long enough
+        let f = move || {
+            list.push(69);
+            println!("print {:?}", list);
+        };
+        // TODO: Uncomment this will fails since list is already moved
+        // println!("{}", list.len());
+        f
+    }
+
+    fn create_fn_once(mut list: Vec<u8>) -> impl FnOnce() {
+        // move of list is required since list is not live long enough
+        let f = move || {
+            list.push(69);
+            println!("print {:?}", list);
+            drop(list);
+        };
+        // TODO: Uncomment this will fails since list is already moved
+        // println!("{}", list.len());
+        f
+    }
+
+    let mut list = vec![1, 2, 3];
+
+    create_fn(&list)();
+    // it will push 69
+    create_fn_mut(&mut list)();
+    // on same list this will alsp push 69 and drop list
+    create_fn_once(list)();
+}
+
 fn main() {
     outer_var();
     capturing_type();
     as_input_parameters();
+
+    closures_as_func_input_param();
+    closure_as_func_output_param();
 }
