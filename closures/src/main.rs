@@ -204,9 +204,9 @@ fn closure_as_func_output_param() {
 }
 
 fn main() {
-    outer_var();
-    capturing_type();
-    as_input_parameters();
+    // outer_var();
+    // capturing_type();
+    // as_input_parameters();
 
     closures_as_func_input_param();
     closure_as_func_output_param();
