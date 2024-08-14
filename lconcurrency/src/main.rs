@@ -1,4 +1,8 @@
-use std::{sync::Arc, thread};
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+    time::Duration,
+};
 
 // Chapter 1
 
@@ -84,6 +88,28 @@ fn shared_by_ref_counter() {
     let _ = tj2.join();
 }
 
+fn mutex_example() {
+    let m = Mutex::new(0);
+
+    thread::scope(|s| {
+        for _ in 0..10 {
+            s.spawn(|| {
+                let mut guard = m.lock().unwrap();
+
+                for _ in 0..100 {
+                    *guard += 1;
+                }
+                // If we remove this below drop it will keeps the guard around till outer for is complete and will take 10 sec to complete.
+                // if we drop it will only take 1 sec to complete bcs of concurrency.
+                drop(guard);
+                thread::sleep(Duration::from_secs(1));
+            });
+        }
+    });
+
+    assert_eq!(m.into_inner().unwrap(), 1000);
+}
+
 // Ends Chapter 1
 
 fn main() {
@@ -138,6 +164,8 @@ fn main() {
     shared_by_leaking();
     shared_by_ref_counter();
 
+    mutex_example();
+
     let t: [i8; 3] = [1, 2, 3];
 
     unsafe {
@@ -145,6 +173,7 @@ fn main() {
     }
 
     extra_exa(1);
+
     // End Chapt 1
 }
 
