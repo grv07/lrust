@@ -1,5 +1,6 @@
 use std::{
-    sync::{Arc, Mutex},
+    collections::VecDeque,
+    sync::{Arc, Condvar, Mutex},
     thread,
     time::Duration,
 };
@@ -110,6 +111,72 @@ fn mutex_example() {
     assert_eq!(m.into_inner().unwrap(), 1000);
 }
 
+fn parking_example() {
+    let queue: Mutex<VecDeque<i32>> = Mutex::new(VecDeque::new());
+
+    let t = thread::scope(|s| {
+        let consumer = s.spawn(|| loop {
+            println!("start consumer");
+            let item = queue.lock().unwrap().pop_front();
+            if let Some(item) = item {
+                println!("{item:?}");
+            } else {
+                println!("park");
+                thread::park();
+            }
+        });
+
+        for i in 0..5 {
+            let _ = queue.lock().unwrap().push_back(i);
+            // NOTE Following sequence of operation will not drop MutexGuard;
+            // So it will first push all of the items then wakes up the consumer.
+            // BCS consumer will always waits for the mutex lock.
+            // let mut item = queue.lock().unwrap();
+            // item.push_back(i);
+
+            println!("push and unpark");
+            consumer.thread().unpark();
+
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
+}
+
+fn cond_var_example() {
+    let queue: Mutex<VecDeque<i32>> = Mutex::new(VecDeque::new());
+    let not_empty = Condvar::new();
+
+    thread::scope(|s| {
+        let _ = s.spawn(|| {
+            println!("Start consumer");
+            for _ in 0..20 {
+                let mut guard = queue.lock().unwrap();
+                let item = guard.pop_back();
+                if let Some(item) = item {
+                    println!("Item: {item}");
+                    drop(guard);
+                } else {
+                    println!("Empty ... ");
+                    guard = not_empty.wait(guard).unwrap();
+                }
+            }
+        });
+
+        for i in 1..10 {
+            println!("Push data");
+
+            queue.lock().unwrap().push_back(i);
+            queue.lock().unwrap().push_back(i + 1);
+
+            not_empty.notify_one();
+
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
+
+    // let consumer =
+}
+
 // Ends Chapter 1
 
 fn main() {
@@ -173,6 +240,9 @@ fn main() {
     }
 
     extra_exa(1);
+
+    // parking_example();
+    cond_var_example();
 
     // End Chapt 1
 }
