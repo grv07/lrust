@@ -1,7 +1,7 @@
 use std::{
     collections::VecDeque,
     sync::{
-        atomic::{AtomicBool, AtomicI16},
+        atomic::{AtomicBool, AtomicI16, AtomicUsize},
         Arc, Condvar, Mutex,
     },
     thread,
@@ -225,8 +225,8 @@ fn progress_example() {
         loop {
             let n = progress.load(std::sync::atomic::Ordering::Relaxed);
 
-            std::process::Command::new("clear").status().unwrap();
-            println!("Working on.. {n}/100");
+            // std::process::Command::new("clear").status().unwrap();
+            // println!("Working on.. {n}/100");
 
             if n == 100 {
                 break;
@@ -237,11 +237,38 @@ fn progress_example() {
     });
 }
 
+fn progress_with_threads() {
+    let progress = &AtomicUsize::new(0);
+
+    thread::scope(|s| {
+        for _i in 0..4 {
+            s.spawn(|| {
+                for _i in 0..25 {
+                    progress.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    thread::sleep(Duration::from_millis(100));
+                }
+            });
+        }
+
+        loop {
+            let n = progress.load(std::sync::atomic::Ordering::Relaxed);
+
+            std::process::Command::new("clear").status().unwrap();
+            println!("Working.. {n}/100");
+
+            if n == 100 {
+                break;
+            }
+        }
+    });
+}
+
 // Ends Chapter 2
 
 fn main() {
     // stop_flag();
     progress_example();
+    progress_with_threads();
 }
 
 fn chap1() {
