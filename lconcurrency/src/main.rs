@@ -1,6 +1,9 @@
 use std::{
     collections::VecDeque,
-    sync::{Arc, Condvar, Mutex},
+    sync::{
+        atomic::{AtomicBool, AtomicI16},
+        Arc, Condvar, Mutex,
+    },
     thread,
     time::Duration,
 };
@@ -154,11 +157,11 @@ fn cond_var_example() {
                 let item = guard.pop_back();
                 if let Some(item) = item {
                     println!("Item: {item}");
-                    drop(guard);
                 } else {
                     println!("Empty ... ");
                     guard = not_empty.wait(guard).unwrap();
                 }
+                drop(guard);
             }
         });
 
@@ -179,7 +182,69 @@ fn cond_var_example() {
 
 // Ends Chapter 1
 
+// Starts Chapter 2
+fn stop_flag() {
+    static STOP: AtomicBool = AtomicBool::new(false);
+
+    let t = thread::spawn(|| {
+        println!("start...");
+        while !STOP.load(std::sync::atomic::Ordering::Relaxed) {}
+    });
+
+    println!("waiting for input ...");
+    for line in std::io::stdin().lines() {
+        match line.unwrap().as_str() {
+            "stop" => {
+                STOP.swap(true, std::sync::atomic::Ordering::Relaxed);
+                break;
+            }
+            "help" => println!("command: help, stop"),
+            cmd => println!("Unknown command found {cmd}"),
+        }
+    }
+
+    let _ = t.join();
+}
+
+fn progress_example() {
+    let progress = AtomicI16::new(0);
+
+    let thread = thread::current();
+    thread::scope(|s| {
+        let _t = s.spawn(|| {
+            println!("start progress");
+            for _ in 0..100 {
+                progress.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+                // progress.store(i + 1, std::sync::atomic::Ordering::Relaxed);
+                thread::sleep(Duration::from_millis(10));
+                thread.unpark();
+            }
+        });
+
+        loop {
+            let n = progress.load(std::sync::atomic::Ordering::Relaxed);
+
+            std::process::Command::new("clear").status().unwrap();
+            println!("Working on.. {n}/100");
+
+            if n == 100 {
+                break;
+            }
+
+            thread::park_timeout(Duration::from_millis(10));
+        }
+    });
+}
+
+// Ends Chapter 2
+
 fn main() {
+    // stop_flag();
+    progress_example();
+}
+
+fn chap1() {
     // Chap 1
     let jh1 = thread::spawn(|| {
         f();
